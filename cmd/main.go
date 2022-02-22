@@ -22,6 +22,8 @@ func main() {
 	budget := flag.Float64("budget", 50.0, "Budget in Euros to buy Eth")
 	buyInterval := flag.Duration("interval", 7*24*time.Hour, "Buy Interval")
 	marketTicker := flag.String("market_ticker", ETH_EUR, "Market Sticker name")
+	flag.Parse()
+
 	client := ftxgo.NewFTXClient(*apiKey, *secretKey)
 
 	price, err := client.GetPrice(*marketTicker)
@@ -29,9 +31,8 @@ func main() {
 		log.Printf("Failed to getPrice: %v, aborting\n", err)
 		os.Exit(1)
 	}
-	log.Printf("ETH price is: %v, %v", price, err)
+	log.Printf("%v price is: %v, %v", *marketTicker, price, err)
 	howMuch := calcQuantity(price, *budget)
-	log.Printf("Placing BUY order: %.1f * %.6f = %v TOTAL\n", price, howMuch, price*howMuch)
 
 	shouldBuy, err := ftxgo.ConfirmDCAPlaceOrder(client, *marketTicker, *budget, *buyInterval)
 	if err == nil || !shouldBuy {
@@ -39,10 +40,11 @@ func main() {
 		os.Exit(1)
 	}
 
+	log.Printf("Placing BUY order: %.1f * %.6f = %v TOTAL\n", price, howMuch, price*howMuch)
 	orderResult, err := client.PostBuyOrder(*marketTicker, price, howMuch)
 	if err != nil || !orderResult.Success {
 		log.Printf("Failed to placeBuyOrder(%v, %.1f, %.6f): %v, aborting\n", ETH_EUR, price, howMuch, err)
 		os.Exit(1)
 	}
-	log.Printf("BUY order ETH: \n%+v\n", orderResult)
+	log.Printf("BUY order %v: \n%+v\n", *marketTicker, orderResult)
 }

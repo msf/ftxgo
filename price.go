@@ -32,6 +32,9 @@ func (ftx *FTXClient) GetPrice(market string) (float64, error) {
 	if err != nil {
 		return 0.0, err
 	}
+	if len(orders.Result.Asks) < 1 || len(orders.Result.Bids) < 1 {
+		return 0.0, fmt.Errorf("empty order book? %+v", orders)
+	}
 
 	asks := orders.Result.Asks
 	bids := orders.Result.Bids

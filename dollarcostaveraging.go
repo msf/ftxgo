@@ -31,7 +31,7 @@ func ConfirmDCAPlaceOrder(client *FTXClient, market string, budget float64, buyI
 		log.Printf("found past order %+v, considering it", v)
 		total += v.Price
 	}
-	if math.Abs(total/2-budget) > 1 {
+	if total != 0 && math.Abs(total/2-budget) > 1 {
 		log.Printf("do NOT buy, found %v spent in last %v timespan", total, buyInterval*2)
 		return false, nil
 	}
