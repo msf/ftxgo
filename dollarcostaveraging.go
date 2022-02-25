@@ -1,9 +1,10 @@
 package ftxgo
 
 import (
-	"log"
 	"math"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // confirm it is safe to buy order to continue strategy of Dollar Cost Averaging
@@ -13,11 +14,11 @@ func ConfirmDCAPlaceOrder(client *FTXClient, market string, budget float64, buyI
 		return false, err
 	}
 	if len(orders) > 0 {
-		log.Print("do NOT buy, found open buy orders: %+v", orders)
+		log.Printf("do NOT buy, found open buy orders: %+v", orders)
 		return false, nil
 	}
 	// we get twice large buy window and check total spend, to protect against variance on buy interval
-	pastBuys, err := client.GetClosedBuyOrders(market, buyInterval*2)
+	pastBuys, err := client.GetClosedOrders(market, "buy", buyInterval*2)
 	if err != nil {
 		return false, err
 	}

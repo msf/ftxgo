@@ -1,12 +1,12 @@
 package main
 
 import (
-	"log"
 	"os"
 	"time"
 
 	"github.com/msf/ftxgo"
 	"github.com/namsral/flag"
+	log "github.com/sirupsen/logrus"
 )
 
 const ETH_EUR = "ETH/EUR"
@@ -24,6 +24,11 @@ func main() {
 	marketTicker := flag.String("market_ticker", ETH_EUR, "Market Sticker name")
 	flag.Parse()
 
+	log.SetFormatter(&log.TextFormatter{
+		TimestampFormat: "2006-01-02 03:04:05.000",
+		FullTimestamp:   true,
+	})
+
 	client := ftxgo.NewFTXClient(*apiKey, *secretKey)
 
 	price, err := client.GetPrice(*marketTicker)
@@ -35,16 +40,24 @@ func main() {
 	howMuch := calcQuantity(price, *budget)
 
 	shouldBuy, err := ftxgo.ConfirmDCAPlaceOrder(client, *marketTicker, *budget, *buyInterval)
-	if err == nil || !shouldBuy {
-		log.Printf("Must stop, error (or shouldn't buy!) on validating DCA Place Order", err)
+	if err != nil || !shouldBuy {
+		log.WithFields(log.Fields{
+			"err":       err,
+			"shouldBuy": shouldBuy,
+			"market":    *marketTicker,
+			"budget":    *budget,
+		}).Warn("Must Stop. failed valdation for DCA Place Order")
 		os.Exit(1)
 	}
 
-	log.Printf("Placing BUY order: %.1f * %.6f = %v TOTAL\n", price, howMuch, price*howMuch)
 	orderResult, err := client.PostBuyOrder(*marketTicker, price, howMuch)
 	if err != nil || !orderResult.Success {
-		log.Printf("Failed to placeBuyOrder(%v, %.1f, %.6f): %v, aborting\n", ETH_EUR, price, howMuch, err)
+		log.WithFields(log.Fields{
+			"err":     err,
+			"Success": orderResult.Success,
+			"Error":   orderResult.Error,
+		}).Warn("Must Stop. failed  Place Order")
 		os.Exit(1)
 	}
-	log.Printf("BUY order %v: \n%+v\n", *marketTicker, orderResult)
+	log.Infof("BOUGHT %v: %+v", *marketTicker, orderResult)
 }

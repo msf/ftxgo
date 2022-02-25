@@ -2,10 +2,11 @@ package ftxgo
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"sort"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type OrderBook struct {
@@ -16,10 +17,15 @@ type OrderBook struct {
 	} `json:"result"`
 }
 
-func (ftx *FTXClient) GetPrice(market string) (float64, error) {
+func (ftx *FTXClient) GetPrice(market string) (price float64, err error) {
 	ts := time.Now()
 	defer func() {
-		log.Printf("GetPrice() took: %v\n", time.Since(ts))
+		log.WithFields(log.Fields{
+			"elapsed": time.Since(ts),
+			"err":     err,
+			"market":  market,
+			"price":   price,
+		}).Info(("GetPrice()"))
 	}()
 
 	url := fmt.Sprintf("https://ftx.com/api/markets/%v/orderbook?depth=16", market)
@@ -45,9 +51,11 @@ func (ftx *FTXClient) GetPrice(market string) (float64, error) {
 		return bids[i][0] > bids[j][0]
 	})
 	bidPrice := bids[0][0]
-	askPrice := asks[0][0]
-	log.Printf("%v bids: %v \n", market, bids[0])
-	log.Printf("%v asks: %v\n", market, asks[0])
-	log.Printf("%v gap: %.3f\n", market, askPrice-bidPrice)
-	return askPrice, nil
+	price = asks[0][0]
+	log.Infof("asks: %v", asks[0])
+	log.WithFields(log.Fields{
+		"market": market,
+		"gap":    fmt.Sprintf("%.3f", price-bidPrice),
+	}).Infof("bids: %v", bids[0])
+	return
 }

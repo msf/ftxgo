@@ -5,10 +5,12 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type FTXCredentials struct {
@@ -42,15 +44,32 @@ func (ftx *FTXClient) Request(req *http.Request, resp interface{}) error {
 
 func (ftx *FTXClient) signedRequest(req *http.Request) *http.Request {
 	ts := time.Now()
-	signature := fmt.Sprintf("%v-%v-%v", ts.UnixMilli(), req.Method, req.URL.Path)
+	unixTs := strconv.FormatInt(ts.UnixMilli(), 10)
 
 	sign := hmac.New(sha256.New, []byte(ftx.creds.SecretKey))
-	sign.Write([]byte(signature))
+	sign.Write([]byte(unixTs))
+	sign.Write([]byte(req.Method))
+	sign.Write([]byte(req.URL.Path))
+	if req.URL.RawQuery != "" {
+		sign.Write([]byte("?" + req.URL.RawQuery))
+	} else if req.Method == "POST" {
+		body, err := req.GetBody()
+		if err != nil {
+			log.Errorf("signedRequest w/ POST, failed to get body: %v", err)
+			return req
+		}
+		defer body.Close()
+		_, err = io.Copy(sign, body)
+		if err != nil {
+			log.Errorf("signedRequest w/ POST, failed to write body on signature: %v", err)
+			return req
+		}
+	}
+
 	signDigest := hex.EncodeToString(sign.Sum(nil))
 
 	req.Header.Add("FTX-KEY", ftx.creds.ApiKey)
 	req.Header.Add("FTX-SIGN", signDigest)
-	req.Header.Add("FTX-TS", strconv.FormatInt(ts.UnixMilli(), 10))
-
+	req.Header.Add("FTX-TS", unixTs)
 	return req
 }

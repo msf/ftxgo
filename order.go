@@ -3,9 +3,10 @@ package ftxgo
 import (
 	"bytes"
 	"encoding/json"
-	"log"
 	"net/http"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type PlaceOrderRequest struct {
@@ -21,30 +22,39 @@ type PlaceOrderRequest struct {
 }
 
 type PlaceOrderResponse struct {
-	Success bool `json:"success"`
+	Success bool   `json:"success"`
+	Error   string `json:"error"`
 	Result  struct {
-		CreatedAt     time.Time   `json:"createdAt"`
-		FilledSize    int         `json:"filledSize"`
-		Future        string      `json:"future"`
-		ID            int         `json:"id"`
-		Market        string      `json:"market"`
-		Price         float64     `json:"price"`
-		RemainingSize int         `json:"remainingSize"`
-		Side          string      `json:"side"`
-		Size          int         `json:"size"`
-		Status        string      `json:"status"`
-		Type          string      `json:"type"`
-		ReduceOnly    bool        `json:"reduceOnly"`
-		Ioc           bool        `json:"ioc"`
-		PostOnly      bool        `json:"postOnly"`
-		ClientID      interface{} `json:"clientId"`
+		CreatedAt     time.Time `json:"createdAt"`
+		FilledSize    float64   `json:"filledSize"`
+		Future        string    `json:"future"`
+		ID            int       `json:"id"`
+		Market        string    `json:"market"`
+		Price         float64   `json:"price"`
+		RemainingSize float64   `json:"remainingSize"`
+		Side          string    `json:"side"`
+		Size          float64   `json:"size"`
+		Status        string    `json:"status"`
+		Type          string    `json:"type"`
+		ReduceOnly    bool      `json:"reduceOnly"`
+		Ioc           bool      `json:"ioc"`
+		PostOnly      bool      `json:"postOnly"`
+		ClientID      string    `json:"clientId"`
 	} `json:"result"`
 }
 
-func (ftx *FTXClient) PostBuyOrder(market string, price, quantity float64) (*PlaceOrderResponse, error) {
+func (ftx *FTXClient) PostBuyOrder(market string, price, quantity float64) (resp PlaceOrderResponse, err error) {
 	ts := time.Now()
 	defer func() {
-		log.Printf("placeBuyOrder() took: %v\n", time.Since(ts))
+		log.WithFields(log.Fields{
+			"elapsed":      time.Since(ts),
+			"err":          err,
+			"market":       market,
+			"price":        price,
+			"quantity":     quantity,
+			"resp.Error":   resp.Error,
+			"resp.Success": resp.Success,
+		}).Info(("PostBuyOrder()"))
 	}()
 
 	order := &PlaceOrderRequest{
@@ -56,16 +66,15 @@ func (ftx *FTXClient) PostBuyOrder(market string, price, quantity float64) (*Pla
 	}
 
 	buf := new(bytes.Buffer)
-	err := json.NewEncoder(buf).Encode(order)
+	err = json.NewEncoder(buf).Encode(order)
 	if err != nil {
-		return nil, err
+		return
 	}
 	req, err := http.NewRequest("POST", "https://ftx.com/api/orders", buf)
 	if err != nil {
-		return nil, err
+		return
 	}
 
-	var resp PlaceOrderResponse
 	err = ftx.Request(req, &resp)
-	return &resp, err
+	return
 }

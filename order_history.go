@@ -2,12 +2,13 @@ package ftxgo
 
 import (
 	"fmt"
-	"log"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 )
 
 type Order struct {
@@ -24,7 +25,8 @@ func (o Order) Spend() float64 {
 }
 
 type FTXOrdersResponse struct {
-	Success bool `json:"success"`
+	Success bool   `json:"success"`
+	Error   string `json:"error"`
 	Result  []struct {
 		AvgFillPrice  float64   `json:"avgFillPrice"`
 		ClientID      string    `json:"clientId"`
@@ -37,7 +39,7 @@ type FTXOrdersResponse struct {
 		PostOnly      bool      `json:"postOnly"`
 		Price         float64   `json:"price"`
 		ReduceOnly    bool      `json:"reduceOnly"`
-		RemainingSize int       `json:"remainingSize"`
+		RemainingSize float64   `json:"remainingSize"`
 		Side          string    `json:"side"`
 		Size          float64   `json:"size"`
 		Status        string    `json:"status"`
@@ -61,19 +63,29 @@ func (ftx *FTXClient) GetOpenBuyOrders(market string) (orders []Order, err error
 func (ftx *FTXClient) GetOpenOrders(market string) (orders []Order, err error) {
 	ts := time.Now()
 	defer func() {
-		log.Printf("GetOpenBuyOrder() took: %v\n", time.Since(ts))
+		log.WithFields(log.Fields{
+			"elapsed": time.Since(ts),
+			"err":     err,
+			"market":  market,
+			"orders":  len(orders),
+		}).Info("GetOpenOrders()")
 	}()
 
 	url := fmt.Sprintf("https://ftx.com/api/orders?market=%v", market)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return orders, err
+		return
 	}
 	var resp FTXOrdersResponse
 	err = ftx.Request(req, &resp)
 	if err != nil || !resp.Success {
-		errors.Wrapf(err, "failed GetOpenOrders, resp.Success: %v", resp.Success)
-		return orders, err
+		err = errors.Wrapf(err, "failed GetOpenOrders, resp.error: %v", resp.Error)
+		log.WithFields(log.Fields{
+			"err":  err,
+			"resp": resp.Error,
+			"url":  req.URL,
+		}).Error("GetOpenOrder request failed")
+		return
 	}
 	for _, v := range resp.Result {
 		orders = append(orders, Order{
@@ -84,33 +96,47 @@ func (ftx *FTXClient) GetOpenOrders(market string) (orders []Order, err error) {
 			Market:    v.Market,
 			Side:      v.Side,
 		})
+		log.WithField("order", fmt.Sprintf("%+v", v)).Info("open order found")
 	}
 	return orders, nil
 }
 
-func (ftx *FTXClient) GetClosedBuyOrders(market string, interval time.Duration) (orders []Order, err error) {
+func (ftx *FTXClient) GetClosedOrders(market, buyOrSell string, interval time.Duration) (orders []Order, err error) {
 	ts := time.Now()
 	defer func() {
-		log.Printf("GetPrice() took: %v\n", time.Since(ts))
+		log.WithFields(log.Fields{
+			"elapsed":  time.Since(ts),
+			"err":      err,
+			"interval": interval,
+			"market":   market,
+			"orders":   len(orders),
+		}).Info("GetClosedBuyOrders()")
 	}()
 
-	url := fmt.Sprintf("https://ftx.com/api/orders/history")
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return orders, err
+	startTime := time.Now().UTC().Add(-interval).Unix()
+	v := url.Values{
+		"start_time": {strconv.FormatInt(startTime, 10)},
+		"market":     {market},
 	}
-	req.URL.Query().Add("market", market)
-	req.URL.Query().Add("side", "buy")
-	unixTime := time.Now().Add(-interval).Unix()
-
-	req.URL.Query().Add("start_time", strconv.FormatInt(unixTime, 10))
+	req, err := http.NewRequest("GET", "https://ftx.com/api/orders/history?"+v.Encode(), nil)
+	if err != nil {
+		return
+	}
 	var resp FTXOrdersResponse
 	err = ftx.Request(req, &resp)
 	if err != nil || !resp.Success {
-		errors.Wrapf(err, "failed GetOpenOrders, resp.Success: %v", resp.Success)
-		return orders, err
+		err = errors.Wrapf(err, "failed GetClosedBuyOrders, resp.Error: %v", resp.Error)
+		log.WithFields(log.Fields{
+			"url":  req.URL,
+			"err":  err,
+			"resp": resp.Error,
+		}).Error("GetOpenOrder request failed")
+		return
 	}
-	for _, v := range resp.Result {
+	for i, v := range resp.Result {
+		if v.Side != buyOrSell {
+			continue
+		}
 		orders = append(orders, Order{
 			Price:     v.Price,
 			Status:    v.Status,
@@ -119,6 +145,10 @@ func (ftx *FTXClient) GetClosedBuyOrders(market string, interval time.Duration) 
 			Market:    v.Market,
 			Side:      v.Side,
 		})
+		log.WithFields(log.Fields{
+			"order":       fmt.Sprintf("%+v", orders[i]),
+			"isBuyOrSell": v.Side == buyOrSell,
+		}).Info("matching order found")
 	}
-	return orders, nil
+	return
 }
