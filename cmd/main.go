@@ -20,8 +20,9 @@ func main() {
 	apiKey := flag.String("ftx_api_key", "", "FTX API Key")
 	secretKey := flag.String("ftx_secret_key", "", "FTX Secret Key")
 	budget := flag.Float64("budget", 50.0, "Budget in Euros to buy Eth")
-	buyInterval := flag.Duration("interval", 7*24*time.Hour, "Buy Interval")
+	buyInterval := flag.Duration("interval", 3*24*time.Hour, "Buy Interval")
 	marketTicker := flag.String("market_ticker", ETH_EUR, "Market Sticker name")
+	executeBuy := flag.Bool("yes", false, "execute the buy order")
 	flag.Parse()
 
 	log.SetFormatter(&log.TextFormatter{
@@ -50,7 +51,16 @@ func main() {
 		os.Exit(1)
 	}
 
-	orderResult, err := client.PostBuyOrder(*marketTicker, price, howMuch)
+	if !*executeBuy {
+		log.WithFields(log.Fields{
+			"ticket":  *marketTicker,
+			"price":   price,
+			"howMuch": howMuch,
+			"budget":  *budget,
+		}).Warn("Must Stop. missing '-yes' flag")
+		os.Exit(0)
+	}
+	orderResult, err := client.PostBuyOrder(*marketTicker, price, howMuch, *executeBuy)
 	if err != nil || !orderResult.Success {
 		log.WithFields(log.Fields{
 			"err":     err,

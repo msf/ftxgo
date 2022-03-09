@@ -18,7 +18,8 @@ func ConfirmDCAPlaceOrder(client *FTXClient, market string, budget float64, buyI
 		return false, nil
 	}
 	// we get twice large buy window and check total spend, to protect against variance on buy interval
-	pastBuys, err := client.GetClosedOrders(market, "buy", buyInterval*2)
+	const intervalCounts = 2
+	pastBuys, err := client.GetClosedOrders(market, "buy", buyInterval*intervalCounts)
 	if err != nil {
 		return false, err
 	}
@@ -30,10 +31,19 @@ func ConfirmDCAPlaceOrder(client *FTXClient, market string, budget float64, buyI
 			continue
 		}
 		log.Printf("found past order %+v, considering it", v)
-		total += v.Price
+		total += v.Spend()
 	}
-	if total != 0 && math.Abs(total/2-budget) > 1 {
-		log.Printf("do NOT buy, found %v spent in last %v timespan", total, buyInterval*2)
+	avgSpend := total / intervalCounts
+	amountToBudget := budget - avgSpend
+	log.WithFields(log.Fields{
+		"total":          total,
+		"budget":         budget,
+		"timespan":       buyInterval * intervalCounts,
+		"avgSpend":       avgSpend,
+		"amountToBudget": amountToBudget,
+	}).Info("should buy?")
+	if amountToBudget < 1 {
+		log.Printf("do NOT buy, found %v spent in last %v timespan, avg: %v, budget: %v", total, buyInterval*intervalCounts, avgSpend, budget)
 		return false, nil
 	}
 	return true, nil

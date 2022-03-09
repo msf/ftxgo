@@ -43,7 +43,7 @@ type PlaceOrderResponse struct {
 	} `json:"result"`
 }
 
-func (ftx *FTXClient) PostBuyOrder(market string, price, quantity float64) (resp PlaceOrderResponse, err error) {
+func (ftx *FTXClient) PostBuyOrder(market string, price, quantity float64, doIt bool) (resp PlaceOrderResponse, err error) {
 	ts := time.Now()
 	defer func() {
 		log.WithFields(log.Fields{

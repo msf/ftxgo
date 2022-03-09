@@ -51,11 +51,12 @@ func (ftx *FTXClient) GetPrice(market string) (price float64, err error) {
 		return bids[i][0] > bids[j][0]
 	})
 	bidPrice := bids[0][0]
-	price = asks[0][0]
+	askPrice := asks[0][0]
 	log.Infof("asks: %v", asks[0])
 	log.WithFields(log.Fields{
 		"market": market,
-		"gap":    fmt.Sprintf("%.3f", price-bidPrice),
+		"gap":    fmt.Sprintf("%.3f", askPrice-bidPrice),
 	}).Infof("bids: %v", bids[0])
+	price = bidPrice
 	return
 }
