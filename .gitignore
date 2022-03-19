@@ -1,5 +1,12 @@
 .keys
+
+# logs
+*.log
+
 # Binaries for programs and plugins
+main
+ftxgo
+
 *.exe
 *.exe~
 *.dll

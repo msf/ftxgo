@@ -14,7 +14,7 @@ import (
 )
 
 type FTXCredentials struct {
-	ApiKey    string
+	APIKey    string
 	SecretKey string
 }
 
@@ -44,10 +44,10 @@ func (ftx *FTXClient) Request(req *http.Request, resp interface{}) error {
 
 func (ftx *FTXClient) signedRequest(req *http.Request) *http.Request {
 	ts := time.Now()
-	unixTs := strconv.FormatInt(ts.UnixMilli(), 10)
+	unixTS := strconv.FormatInt(ts.UnixMilli(), 10)
 
 	sign := hmac.New(sha256.New, []byte(ftx.creds.SecretKey))
-	sign.Write([]byte(unixTs))
+	sign.Write([]byte(unixTS))
 	sign.Write([]byte(req.Method))
 	sign.Write([]byte(req.URL.Path))
 	if req.URL.RawQuery != "" {
@@ -68,8 +68,8 @@ func (ftx *FTXClient) signedRequest(req *http.Request) *http.Request {
 
 	signDigest := hex.EncodeToString(sign.Sum(nil))
 
-	req.Header.Add("FTX-KEY", ftx.creds.ApiKey)
+	req.Header.Add("FTX-KEY", ftx.creds.APIKey)
 	req.Header.Add("FTX-SIGN", signDigest)
-	req.Header.Add("FTX-TS", unixTs)
+	req.Header.Add("FTX-TS", unixTS)
 	return req
 }

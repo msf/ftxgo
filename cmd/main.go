@@ -46,6 +46,7 @@ func main() {
 			"err":       err,
 			"shouldBuy": shouldBuy,
 			"market":    *marketTicker,
+			"howMuch":   howMuch,
 			"budget":    *budget,
 		}).Warn("Must Stop. failed valdation for DCA Place Order")
 		os.Exit(1)

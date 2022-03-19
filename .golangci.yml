@@ -1,0 +1,15 @@
+linters:
+  enable:
+    - goimports
+    - stylecheck
+    - lll
+  disable:
+    - errcheck
+
+issues:
+  exclude-rules:
+    - path: cmd/main.go
+      text: "ST1003: should not use ALL_CAPS in Go names"
+    - linters:
+        - lll
+      source: "// nolint:lll"

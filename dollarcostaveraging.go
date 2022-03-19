@@ -35,15 +35,16 @@ func ConfirmDCAPlaceOrder(client *FTXClient, market string, budget float64, buyI
 	}
 	avgSpend := total / intervalCounts
 	amountToBudget := budget - avgSpend
+	abortBuy := amountToBudget < 1
 	log.WithFields(log.Fields{
 		"total":          total,
 		"budget":         budget,
 		"timespan":       buyInterval * intervalCounts,
 		"avgSpend":       avgSpend,
 		"amountToBudget": amountToBudget,
+		"abort Buy?":     abortBuy,
 	}).Info("should buy?")
-	if amountToBudget < 1 {
-		log.Printf("do NOT buy, found %v spent in last %v timespan, avg: %v, budget: %v", total, buyInterval*intervalCounts, avgSpend, budget)
+	if abortBuy {
 		return false, nil
 	}
 	return true, nil
