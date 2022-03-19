@@ -1,6 +1,7 @@
 package main
 
 import (
+	"math"
 	"os"
 	"time"
 
@@ -13,7 +14,14 @@ const ETH_EUR = "ETH/EUR"
 
 func calcQuantity(price, budget float64) float64 {
 	// budget = price * quantity
-	return budget / price
+	raw := budget / price
+	// round to 0.0000
+	rounded := math.Round(raw*10000) / 10000.0
+	log.WithFields(log.Fields{
+		"quantity-raw":     raw,
+		"quantity-rounded": rounded,
+	}).Info("CalcQuantity")
+	return rounded
 }
 
 func main() {
@@ -37,7 +45,6 @@ func main() {
 		log.Printf("Failed to getPrice: %v, aborting\n", err)
 		os.Exit(1)
 	}
-	log.Printf("%v price is: %v, %v", *marketTicker, price, err)
 	howMuch := calcQuantity(price, *budget)
 
 	shouldBuy, err := ftxgo.ConfirmDCAPlaceOrder(client, *marketTicker, *budget, *buyInterval)
@@ -54,13 +61,19 @@ func main() {
 
 	if !*executeBuy {
 		log.WithFields(log.Fields{
-			"ticket":  *marketTicker,
+			"symbol":  *marketTicker,
 			"price":   price,
 			"howMuch": howMuch,
 			"budget":  *budget,
 		}).Warn("Must Stop. missing '-yes' flag")
 		os.Exit(0)
 	}
+	log.WithFields(log.Fields{
+		"symbol":  *marketTicker,
+		"price":   price,
+		"howMuch": howMuch,
+		"budget":  *budget,
+	}).Info("Go-Ahead to BUY")
 	orderResult, err := client.PostBuyOrder(*marketTicker, price, howMuch, *executeBuy)
 	if err != nil || !orderResult.Success {
 		log.WithFields(log.Fields{
