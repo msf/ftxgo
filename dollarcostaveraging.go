@@ -25,8 +25,8 @@ func ConfirmDCAPlaceOrder(client *FTXClient, market string, budget float64, buyI
 	}
 	total := 0.0
 	for _, v := range pastBuys {
-		// only include orders within same budget
-		if math.Abs(v.Spend()-budget) > 2.0 {
+		// only include orders within 5% of budget
+		if math.Abs(v.Spend()-budget) > (budget * 0.05) {
 			log.Printf("found past order %+v, ignoring", v)
 			continue
 		}

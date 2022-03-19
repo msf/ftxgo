@@ -115,8 +115,8 @@ func (ftx *FTXClient) GetClosedOrders(market, buyOrSell string, interval time.Du
 
 	startTime := time.Now().UTC().Add(-interval).Unix()
 	v := url.Values{
-		"start_time": {strconv.FormatInt(startTime, 10)},
-		"market":     {market},
+		"start_time": []string{strconv.FormatInt(startTime, 10)},
+		"market":     []string{market},
 	}
 	req, err := http.NewRequest("GET", "https://ftx.com/api/orders/history?"+v.Encode(), nil)
 	if err != nil {
@@ -133,20 +133,31 @@ func (ftx *FTXClient) GetClosedOrders(market, buyOrSell string, interval time.Du
 		}).Error("GetOpenOrder request failed")
 		return
 	}
-	for i, v := range resp.Result {
+	for _, v := range resp.Result {
 		if v.Side != buyOrSell {
 			continue
 		}
-		orders = append(orders, Order{
+		if v.FilledSize != v.Size {
+			log.WithFields(log.Fields{
+				"filledSize": v.FilledSize,
+				"size":       v.Size,
+				"order":      fmt.Sprintf("%+v", v),
+			}).Info("Skipping not fully filled order")
+			continue
+		}
+
+		order := Order{
 			Price:     v.Price,
 			Status:    v.Status,
 			Quantity:  v.Size,
 			Timestamp: v.CreatedAt,
 			Market:    v.Market,
 			Side:      v.Side,
-		})
+		}
+		orders = append(orders, order)
 		log.WithFields(log.Fields{
-			"order":       fmt.Sprintf("%+v", orders[i]),
+			"order":       fmt.Sprintf("%+v", order),
+			"original":    fmt.Sprintf("%+v", v),
 			"isBuyOrSell": v.Side == buyOrSell,
 		}).Info("matching order found")
 	}
