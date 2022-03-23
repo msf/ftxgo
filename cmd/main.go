@@ -27,8 +27,8 @@ func calcQuantity(price, budget float64) float64 {
 func main() {
 	apiKey := flag.String("ftx_api_key", "", "FTX API Key")
 	secretKey := flag.String("ftx_secret_key", "", "FTX Secret Key")
-	budget := flag.Float64("budget", 50.0, "Budget in Euros to buy Eth")
-	buyInterval := flag.Duration("interval", 3*24*time.Hour, "Buy Interval")
+	budget := flag.Float64("budget", 51.0, "Budget in Euros to buy Eth")
+	buyInterval := flag.Duration("interval", 24*time.Hour, "Buy Interval")
 	marketTicker := flag.String("market_ticker", ETH_EUR, "Market Sticker name")
 	executeBuy := flag.Bool("yes", false, "execute the buy order")
 	flag.Parse()
