@@ -37,6 +37,12 @@ func main() {
 		TimestampFormat: "2006-01-02 03:04:05.000",
 		FullTimestamp:   true,
 	})
+	log.WithFields(log.Fields{
+		"budget":       *budget,
+		"buyInterval":  *buyInterval,
+		"marketTicker": *marketTicker,
+		"executeBuy":   *executeBuy,
+	}).Info("Starting ftx DCA")
 
 	client := ftxgo.NewFTXClient(*apiKey, *secretKey)
 
