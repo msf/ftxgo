@@ -23,6 +23,11 @@ func ConfirmDCAPlaceOrder(client *FTXClient, market string, budget float64, buyI
 	if err != nil {
 		return false, err
 	}
+	return IsBuyOrderOkay(pastBuys, budget, buyInterval, buyInterval*intervalCounts)
+}
+
+func IsBuyOrderOkay(pastBuys []Order, budget float64, interval time.Duration, timespan time.Duration) (bool, error) {
+
 	total := 0.0
 	for _, v := range pastBuys {
 		// only include orders within 15% of budget
@@ -33,19 +38,26 @@ func ConfirmDCAPlaceOrder(client *FTXClient, market string, budget float64, buyI
 		log.Printf("found past order %+v, considering it", v)
 		total += v.Spend()
 	}
-	avgSpend := total / intervalCounts
-	amountToBudget := budget - avgSpend
-	abortBuy := amountToBudget < 1
+	avgSpend := total / timespan.Hours() * 24
+	budgetPerDay := budget / interval.Hours() * 24
+
+	spendRatio := avgSpend / budgetPerDay
+
+	shouldBuy := spendRatio < 0.98 // 3% below target is okay
 	log.WithFields(log.Fields{
-		"abort Buy?":     abortBuy,
-		"amountToBudget": amountToBudget,
-		"total":          total,
-		"budget":         budget,
-		"timespan":       buyInterval * intervalCounts,
-		"avgSpend":       avgSpend,
+		"shouldBuy":    shouldBuy,
+		"spendRatio":   RoundFloat(spendRatio),
+		"avgSpend":     RoundFloat(avgSpend),
+		"budgetPerDay": RoundFloat(budgetPerDay),
+		"total":        total,
+		"timespan":     timespan,
+		"abortBuy":     !shouldBuy,
 	}).Info("should buy?")
-	if abortBuy {
-		return false, nil
-	}
-	return true, nil
+	return shouldBuy, nil
+}
+
+// Rounds a floa64 like FTX rounds market quantity volumes, to 3 decimal places
+func RoundFloat(val float64) float64 {
+	// round to 0.000
+	return math.Round(val*1000) / 1000.0
 }

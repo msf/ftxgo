@@ -1,7 +1,6 @@
 package main
 
 import (
-	"math"
 	"os"
 	"time"
 
@@ -15,8 +14,7 @@ const ETH_EUR = "ETH/EUR"
 func calcQuantity(price, budget float64) float64 {
 	// budget = price * quantity
 	raw := budget / price
-	// round to 0.0000
-	rounded := math.Round(raw*10000) / 10000.0
+	rounded := ftxgo.RoundFloat(raw)
 	log.WithFields(log.Fields{
 		"quantity-raw":     raw,
 		"quantity-rounded": rounded,
