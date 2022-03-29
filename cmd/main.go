@@ -22,6 +22,15 @@ func calcQuantity(price, budget float64) float64 {
 	return rounded
 }
 
+type UTCFormatter struct {
+	log.Formatter
+}
+
+func (u UTCFormatter) Format(e *log.Entry) ([]byte, error) {
+	e.Time = e.Time.UTC()
+	return u.Formatter.Format(e)
+}
+
 func main() {
 	apiKey := flag.String("ftx_api_key", "", "FTX API Key")
 	secretKey := flag.String("ftx_secret_key", "", "FTX Secret Key")
@@ -31,10 +40,10 @@ func main() {
 	executeBuy := flag.Bool("yes", false, "execute the buy order")
 	flag.Parse()
 
-	log.SetFormatter(&log.TextFormatter{
-		TimestampFormat: "2006-01-02 03:04:05.000",
+	log.SetFormatter(UTCFormatter{&log.TextFormatter{
+		TimestampFormat: "2006-01-02 15:04:05.000Z",
 		FullTimestamp:   true,
-	})
+	}})
 	log.WithFields(log.Fields{
 		"budget":       *budget,
 		"buyInterval":  *buyInterval,
