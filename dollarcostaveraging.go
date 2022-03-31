@@ -8,7 +8,9 @@ import (
 )
 
 // confirm it is safe to buy order to continue strategy of Dollar Cost Averaging
-func ConfirmDCAPlaceOrder(client *FTXClient, market string, budget float64, buyInterval time.Duration) (bool, error) {
+func ConfirmDCAPlaceOrder(
+	client *FTXClient, market string, budget float64, buyInterval, intervalCounts time.Duration,
+) (bool, error) {
 	orders, err := client.GetOpenBuyOrders(market)
 	if err != nil {
 		return false, err
@@ -18,7 +20,6 @@ func ConfirmDCAPlaceOrder(client *FTXClient, market string, budget float64, buyI
 		return false, nil
 	}
 	// we get large buy window and check total spend, to protect against variance on buy interval
-	const intervalCounts = 2
 	pastBuys, err := client.GetClosedOrders(market, "buy", buyInterval*intervalCounts)
 	if err != nil {
 		return false, err

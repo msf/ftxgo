@@ -38,6 +38,7 @@ func main() {
 	buyInterval := flag.Duration("interval", 24*time.Hour, "Buy Interval")
 	marketTicker := flag.String("market_ticker", ETH_EUR, "Market Sticker name")
 	executeBuy := flag.Bool("yes", false, "execute the buy order")
+	avgWindow := flag.Int("avg_window", 7, "number of buy intervals to consider for the DCA")
 	flag.Parse()
 
 	log.SetFormatter(UTCFormatter{&log.TextFormatter{
@@ -49,6 +50,7 @@ func main() {
 		"buyInterval":  *buyInterval,
 		"marketTicker": *marketTicker,
 		"executeBuy":   *executeBuy,
+		"avgWindow":    *avgWindow,
 	}).Info("Starting ftx DCA")
 
 	client := ftxgo.NewFTXClient(*apiKey, *secretKey)
@@ -60,7 +62,7 @@ func main() {
 	}
 	howMuch := calcQuantity(price, *budget)
 
-	shouldBuy, err := ftxgo.ConfirmDCAPlaceOrder(client, *marketTicker, *budget, *buyInterval)
+	shouldBuy, err := ftxgo.ConfirmDCAPlaceOrder(client, *marketTicker, *budget, *buyInterval, time.Duration(*avgWindow))
 	if err != nil || !shouldBuy {
 		log.WithFields(log.Fields{
 			"err":       err,
