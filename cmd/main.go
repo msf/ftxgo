@@ -9,7 +9,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const ETH_EUR = "ETH/EUR"
+const ethToken = "stETH/USD"
 
 func calcQuantity(price, budget float64) float64 {
 	// budget = price * quantity
@@ -34,9 +34,9 @@ func (u UTCFormatter) Format(e *log.Entry) ([]byte, error) {
 func main() {
 	apiKey := flag.String("ftx_api_key", "", "FTX API Key")
 	secretKey := flag.String("ftx_secret_key", "", "FTX Secret Key")
-	budget := flag.Float64("budget", 51.0, "Budget in Euros to buy Eth")
+	budget := flag.Float64("budget", 57.0, "Budget to buy Eth")
 	buyInterval := flag.Duration("interval", 24*time.Hour, "Buy Interval")
-	marketTicker := flag.String("market_ticker", ETH_EUR, "Market Sticker name")
+	marketTicker := flag.String("market_ticker", ethToken, "Market Sticker name")
 	executeBuy := flag.Bool("yes", false, "execute the buy order")
 	avgWindow := flag.Int("avg_window", 7, "number of buy intervals to consider for the DCA")
 	flag.Parse()

@@ -159,7 +159,7 @@ func (ftx *FTXClient) GetClosedOrders(market, buyOrSell string, interval time.Du
 			"order":       fmt.Sprintf("%+v", order),
 			"original":    fmt.Sprintf("%+v", v),
 			"isBuyOrSell": v.Side == buyOrSell,
-		}).Info("matching order found")
+		}).Debug("matching order found")
 	}
 	return
 }
