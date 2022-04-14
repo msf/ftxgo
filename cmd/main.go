@@ -34,7 +34,7 @@ func (u UTCFormatter) Format(e *log.Entry) ([]byte, error) {
 func main() {
 	apiKey := flag.String("ftx_api_key", "", "FTX API Key")
 	secretKey := flag.String("ftx_secret_key", "", "FTX Secret Key")
-	budget := flag.Float64("budget", 57.0, "Budget to buy Eth")
+	budget := flag.Float64("budget", 55.0, "Budget to buy Eth")
 	buyInterval := flag.Duration("interval", 24*time.Hour, "Buy Interval")
 	marketTicker := flag.String("market_ticker", ethToken, "Market Sticker name")
 	executeBuy := flag.Bool("yes", false, "execute the buy order")
