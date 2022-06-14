@@ -3,6 +3,6 @@
 pushd /home/miguel/utils/ftxgo
 
 source .keys
-./ftxgo --avg_window=5 $*
+./ftxgo -budget=53 -avg_window=30 $*
 
 popd
