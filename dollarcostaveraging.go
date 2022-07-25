@@ -30,6 +30,7 @@ func ConfirmDCAPlaceOrder(
 func IsBuyOrderOkay(pastBuys []Order, budget float64, interval time.Duration, timespan time.Duration) (bool, error) {
 
 	total := 0.0
+	totalAmount := 0.0
 	for _, v := range pastBuys {
 		// only include orders within 15% of budget
 		if math.Abs(v.Spend()-budget) > (budget * 0.15) {
@@ -38,6 +39,7 @@ func IsBuyOrderOkay(pastBuys []Order, budget float64, interval time.Duration, ti
 		}
 		log.Printf("found past order %+v, considering it", v)
 		total += v.Spend()
+		totalAmount += v.Quantity
 	}
 	avgSpend := total / timespan.Hours() * 24
 	budgetPerDay := budget / interval.Hours() * 24
@@ -50,7 +52,8 @@ func IsBuyOrderOkay(pastBuys []Order, budget float64, interval time.Duration, ti
 		"spendRatio":   RoundFloat(spendRatio),
 		"avgSpend":     RoundFloat(avgSpend),
 		"budgetPerDay": RoundFloat(budgetPerDay),
-		"total":        total,
+		"totalSpent":   total,
+		"totalAmount":  totalAmount,
 		"timespan":     timespan,
 		"abortBuy":     !shouldBuy,
 	}).Info("should buy?")
