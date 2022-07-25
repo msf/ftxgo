@@ -57,6 +57,12 @@ func (ftx *FTXClient) GetPrice(market string) (price float64, err error) {
 		"market": market,
 		"gap":    fmt.Sprintf("%.3f", askPrice-bidPrice),
 	}).Infof("bids: %v", bids[0])
-	price = askPrice
-	return
+	// 1 cent below askPrice to reduce fees
+	price = askPrice - 0.1
+	if price < bidPrice {
+		// edge case where askPrice == bidPrice, never price below bidPrice
+		price = bidPrice
+	}
+
+	return price, nil
 }
